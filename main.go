@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"io"
 	"log"
 	"net/http"
@@ -37,5 +38,33 @@ func main() {
 
 		w.WriteHeader(http.StatusOK)
 		_, _ = io.WriteString(w, content)
+	})
+
+	m.HandleFunc("/api/update_note", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != "POST" {
+			w.WriteHeader(http.StatusMethodNotAllowed)
+			return
+		}
+
+		if n == nil {
+			// n isn't even initialized yet wtf
+			log.Printf("[WTF] webapp called /api/update_note before initializing db")
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		jd := json.NewDecoder(r.Body)
+		defer r.Body.Close()
+
+		nu := notes.NotesUpdate{}
+
+		if err := jd.Decode(&nu); err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		n.UpdateNote(nu)
+
+		w.WriteHeader(http.StatusOK)
 	})
 }
