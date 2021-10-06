@@ -24,7 +24,7 @@ func main() {
 		os.Exit(2)
 	}
 
-	filePath := args
+	filePath := args[1]
 
 	_, _ = os.Stdout.WriteString("Enter password: ")
 
