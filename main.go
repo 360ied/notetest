@@ -96,13 +96,23 @@ skipOpen:
 		}
 
 		noteN := 0
+		newNoteName := ""
 
 		for {
-			_, _ = os.Stdout.WriteString("Enter number: ")
+			_, _ = os.Stdout.WriteString("Enter number (type 'c' to create new): ")
 			line := readLine(r)
 			_, _ = os.Stdout.WriteString("\n")
 
-			n, err := strconv.ParseInt(string(line), 10, 64)
+			strLine := string(line)
+
+			if strLine == "c" {
+				_, _ = os.Stdout.WriteString("Enter new note name: ")
+				newNoteName = string(readLine(r))
+				_, _ = os.Stdout.WriteString("\n")
+				break
+			}
+
+			n, err := strconv.ParseInt(strLine, 10, 64)
 			if err != nil {
 				fmt.Printf("Error parsing int: %s\n", err.Error())
 				continue
@@ -117,9 +127,16 @@ skipOpen:
 			break
 		}
 
-		noteName := noteList[noteN]
+		noteName := newNoteName
 
-		noteContent, _ := nm.ViewNote(noteName)
+		if newNoteName == "" {
+			noteName = noteList[noteN]
+		}
+
+		noteContent, found := nm.ViewNote(noteName)
+		if !found {
+			noteContent = ""
+		}
 
 		tmpFile, err := os.Create(tmpFilePath)
 		if err != nil {
@@ -134,13 +151,18 @@ skipOpen:
 			panic(err)
 		}
 
-		cmd := exec.Cmd{
-			Path:   editor,
-			Args:   []string{tmpFilePath},
-			Stdin:  os.Stdin,
-			Stdout: os.Stdout,
-			Stderr: os.Stderr,
-		}
+		// cmd := exec.Cmd{
+		// 	Path:   editor,
+		// 	Args:   []string{tmpFilePath},
+		// 	Stdin:  os.Stdin,
+		// 	Stdout: os.Stdout,
+		// 	Stderr: os.Stderr,
+		// }
+
+		cmd := exec.Command(editor, tmpFilePath)
+		cmd.Stdin = os.Stdin
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
 
 		if err := cmd.Start(); err != nil {
 			panic(err)

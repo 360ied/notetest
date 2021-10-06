@@ -37,7 +37,7 @@ func UnlockDB(r io.Reader, key []byte) (*Notes, error) {
 		return nil, err
 	}
 
-	nonce := [32]byte{}
+	nonce := [24]byte{}
 	if _, err := io.ReadFull(buf, nonce[:]); err != nil {
 		return nil, err
 	}
@@ -76,7 +76,9 @@ func (n *Notes) SaveDB(w io.Writer, key []byte) error {
 		return err
 	}
 
-	nonce := [32]byte{}
+	// log.Printf("AEADNONCELEN %s\n", aead.NonceSize())
+
+	nonce := [24]byte{}
 	if _, err := cryptorand.Read(nonce[:]); err != nil {
 		return err
 	}
