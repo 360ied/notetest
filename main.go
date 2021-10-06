@@ -15,6 +15,7 @@ import (
 	_ "embed"
 
 	"golang.org/x/crypto/argon2"
+	"golang.org/x/crypto/ssh/terminal"
 )
 
 func readLine(r *bufio.Reader) []byte {
@@ -59,7 +60,11 @@ func main() {
 	_, _ = os.Stdout.WriteString("Enter password: ")
 
 	r := bufio.NewReader(os.Stdin)
-	b := readLine(r)
+	// b := readLine(r)
+	b, err := terminal.ReadPassword(0)
+	if err != nil {
+		panic(err)
+	}
 	_, _ = os.Stdout.WriteString("\n")
 
 	key := argon2.IDKey(b, make([]byte, 32), 1, 64*1024, 2, 32)
