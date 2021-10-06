@@ -37,6 +37,13 @@ func readLine(r *bufio.Reader) []byte {
 	return buf.Bytes()
 }
 
+func readInt(r *bufio.Reader) (int64, error) {
+	l := readLine(r)
+
+	i, err := strconv.ParseInt(string(l), 10, 64)
+	return i, err
+}
+
 //go:embed usage.txt
 var usage string
 
@@ -104,9 +111,10 @@ skipOpen:
 
 		noteN := 0
 		newNoteName := ""
+		deleteN := false
 
 		for {
-			_, _ = os.Stdout.WriteString("Enter number (type 'c' to create new): ")
+			_, _ = os.Stdout.WriteString("Enter number ('c' to create new, 'd' to delete): ")
 			line := readLine(r)
 			_, _ = os.Stdout.WriteString("\n")
 
@@ -116,6 +124,27 @@ skipOpen:
 				_, _ = os.Stdout.WriteString("Enter new note name: ")
 				newNoteName = string(readLine(r))
 				_, _ = os.Stdout.WriteString("\n")
+				break
+			}
+			if strLine == "d" {
+				deleteN = true
+				for {
+					_, _ = os.Stdout.WriteString("Enter note number to delete: ")
+					n, err := readInt(r)
+					if err != nil {
+						fmt.Printf("Error parsing int: %s\n", err.Error())
+						continue
+					}
+
+					if n < 0 || n >= int64(len(noteList)) {
+						_, _ = os.Stdout.WriteString("Number is either below zero or too high. Try again.\n")
+						continue
+					}
+
+					noteN = int(n)
+					break
+				}
+
 				break
 			}
 
@@ -138,6 +167,28 @@ skipOpen:
 
 		if newNoteName == "" {
 			noteName = noteList[noteN]
+		}
+
+		if deleteN {
+			nm.UpdateNote(notes.NotesUpdate{
+				Name:   noteName,
+				Delete: true,
+			})
+
+			dbFile, err := os.Create(filePath)
+			if err != nil {
+				panic(err)
+			}
+
+			if err := nm.SaveDB(dbFile, key); err != nil {
+				panic(err)
+			}
+
+			if err := dbFile.Close(); err != nil {
+				panic(err)
+			}
+
+			continue
 		}
 
 		noteContent, found := nm.ViewNote(noteName)
@@ -197,8 +248,10 @@ skipOpen:
 		nm.UpdateNote(notes.NotesUpdate{
 			Name:    noteName,
 			Content: sb.String(),
-			Delete:  false,
+			//	Delete:  deleteN,
 		})
+
+		//deleteSkip:
 
 		dbFile, err := os.Create(filePath)
 		if err != nil {
