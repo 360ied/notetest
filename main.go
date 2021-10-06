@@ -8,6 +8,7 @@ import (
 	"notetest/notes"
 	"os"
 	"os/exec"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -91,6 +92,7 @@ skipOpen:
 		_, _ = os.Stdout.WriteString("Notes:\n")
 
 		noteList := nm.ListNotes()
+		sort.Strings(noteList)
 		for i, noteName := range noteList {
 			fmt.Printf("%d | %s\n", i, noteName)
 		}
