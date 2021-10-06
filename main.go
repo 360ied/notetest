@@ -64,6 +64,8 @@ func main() {
 
 	filePath := args[1]
 
+passwordEntry:
+
 	_, _ = os.Stdout.WriteString("Enter password: ")
 
 	r := bufio.NewReader(os.Stdin)
@@ -82,6 +84,17 @@ func main() {
 	if err != nil {
 		fmt.Printf("Error opening DB file: %s\nCreating a new db\n", err.Error())
 		nm = notes.NewEmptyDB()
+		_, _ = os.Stdout.WriteString("Enter password again: ")
+		nb, err := terminal.ReadPassword(0)
+		if err != nil {
+			panic(err)
+		}
+		_, _ = os.Stdout.WriteString("\n")
+
+		if !bytes.Equal(b, nb) {
+			_, _ = os.Stdout.WriteString("Password doesn't match! Try again.\n")
+			goto passwordEntry
+		}
 		goto skipOpen
 	}
 
