@@ -27,13 +27,8 @@ func NewEmptyDB() *Notes {
 // UnlockDB opens a Notes file
 // may read more than necessary from the io.Reader
 func UnlockDB(r io.Reader, key []byte) (*Notes, error) {
-	gr, err := gzip.NewReader(r)
-	if err != nil {
-		return nil, err
-	}
-
 	buf := &bytes.Buffer{}
-	if _, err := buf.ReadFrom(gr); err != nil {
+	if _, err := buf.ReadFrom(r); err != nil {
 		return nil, err
 	}
 
@@ -52,7 +47,18 @@ func UnlockDB(r io.Reader, key []byte) (*Notes, error) {
 		return nil, err
 	}
 
-	nm, err := strmap.Unmarshal(bytes.NewReader(pt))
+	gr, err := gzip.NewReader(bytes.NewReader(pt))
+	if err != nil {
+		return nil, err
+	}
+
+	grBuf := &bytes.Buffer{}
+
+	if _, err := grBuf.ReadFrom(gr); err != nil {
+		return nil, err
+	}
+
+	nm, err := strmap.Unmarshal(bytes.NewReader(grBuf.Bytes()))
 	if err != nil {
 		return nil, err
 	}
@@ -66,11 +72,6 @@ func (n *Notes) SaveDB(w io.Writer, key []byte) error {
 	n.mu.RLock()
 	defer n.mu.RUnlock()
 
-	gw, err := gzip.NewWriterLevel(w, gzip.BestCompression)
-	if err != nil {
-		return err
-	}
-
 	aead, err := chacha20poly1305.NewX(key)
 	if err != nil {
 		return err
@@ -83,20 +84,30 @@ func (n *Notes) SaveDB(w io.Writer, key []byte) error {
 		return err
 	}
 
-	if _, err := gw.Write(nonce[:]); err != nil {
+	if _, err := w.Write(nonce[:]); err != nil {
 		return err
 	}
 
 	ptBuf := &bytes.Buffer{}
 	strmap.Marshal(ptBuf, n.nm)
 
-	ct := aead.Seal(nil, nonce[:], ptBuf.Bytes(), nil)
+	gwBuf := &bytes.Buffer{}
+	gw, err := gzip.NewWriterLevel(gwBuf, gzip.BestCompression)
+	if err != nil {
+		return err
+	}
 
-	if _, err := gw.Write(ct); err != nil {
+	if _, err := ptBuf.WriteTo(gw); err != nil {
 		return err
 	}
 
 	if err := gw.Close(); err != nil {
+		return err
+	}
+
+	ct := aead.Seal(nil, nonce[:], gwBuf.Bytes(), nil)
+
+	if _, err := w.Write(ct); err != nil {
 		return err
 	}
 
