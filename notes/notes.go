@@ -18,6 +18,12 @@ type Notes struct {
 	nm map[string]string
 }
 
+func NewEmptyDB() *Notes {
+	return &Notes{
+		nm: map[string]string{},
+	}
+}
+
 // UnlockDB opens a Notes file
 // may read more than necessary from the io.Reader
 func UnlockDB(r io.Reader, key []byte) (*Notes, error) {
@@ -124,4 +130,16 @@ func (n *Notes) ViewNote(name string) (string, bool) {
 
 	content, found := n.nm[name]
 	return content, found
+}
+
+func (n *Notes) ListNotes() []string {
+	n.mu.RLock()
+	defer n.mu.RUnlock()
+
+	ret := make([]string, len(n.nm))
+	for k, _ := range n.nm {
+		ret = append(ret, k)
+	}
+
+	return ret
 }
