@@ -138,8 +138,8 @@ func (n *Notes) ListNotes() []string {
 	n.mu.RLock()
 	defer n.mu.RUnlock()
 
-	ret := make([]string, len(n.nm))
-	for k, _ := range n.nm {
+	ret := []string{}
+	for k := range n.nm {
 		ret = append(ret, k)
 	}
 
