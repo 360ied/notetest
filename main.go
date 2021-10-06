@@ -81,6 +81,13 @@ func main() {
 			return
 		}
 
-		ndb, err := notes.UnlockDB(r.Body)
+		ndb, err := notes.UnlockDB(r.Body, key)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		n = ndb
+
+		w.WriteHeader(http.StatusOK)
 	})
 }
