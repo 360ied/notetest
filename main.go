@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/hex"
 	"encoding/json"
 	"io"
 	"log"
@@ -54,7 +55,6 @@ func main() {
 		}
 
 		jd := json.NewDecoder(r.Body)
-		defer r.Body.Close()
 
 		nu := notes.NotesUpdate{}
 
@@ -66,5 +66,21 @@ func main() {
 		n.UpdateNote(nu)
 
 		w.WriteHeader(http.StatusOK)
+	})
+
+	m.HandleFunc("/api/open_db", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != "POST" {
+			w.WriteHeader(http.StatusMethodNotAllowed)
+			return
+		}
+
+		keyHex := r.URL.Query().Get("key")
+		key, err := hex.DecodeString(keyHex)
+		if err != nil && len(key) != 32 {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		ndb, err := notes.UnlockDB(r.Body)
 	})
 }
