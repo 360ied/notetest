@@ -275,6 +275,10 @@ skipOpen:
 			panic(err)
 		}
 
+		if err := dbFile.Sync(); err != nil {
+			panic(err)
+		}
+
 		if err := dbFile.Close(); err != nil {
 			panic(err)
 		}
